@@ -176,28 +176,36 @@ with tab3:
         st.markdown(f"👉 [⭐ Solicitar Reseña en Google Maps por WhatsApp]({url_review})")
 
 # --- TAB 4: GIFT CARDS Y VOUCHERS ---
+# --- TAB 4: GIFT CARDS Y VOUCHERS ---
 with tab4:
     st.header("🎁 Emitir Gift Card Digital")
     
+    # Generar un código aleatorio por defecto (ej: GIFT-8392)
+    import random
+    codigo_default = f"GIFT-{random.randint(1000, 9999)}"
+    
     with st.form("form_gc"):
         col_g1, col_g2 = st.columns(2)
-        codigo = col_g1.text_input("Código de Gift Card", "GIFT-100")
+        codigo = col_g1.text_input("Código de Gift Card", codigo_default)
         comprador = col_g2.text_input("Nombre de quien regala")
         
         col_g3, col_g4 = st.columns(2)
         beneficiario = col_g3.text_input("Nombre del agasajado / De")
         servicio_gc = col_g4.text_input("Servicio / Tratamiento", "Masaje Relajante 60 min")
         
-        tel_destino = st.text_input("Teléfono para enviar por WhatsApp (opcional, ej: 5491123456789)")
+        tel_destino = st.text_input("Teléfono para enviar por WhatsApp (ej: 5491123456789)")
         
         submit_gc = st.form_submit_button("Generar Gift Card")
         
     if submit_gc:
+        clean_tel_gc = "".join(filter(str.isdigit, tel_destino)) if tel_destino else ""
+        
         supabase.table("gift_cards").insert({
             "codigo": codigo,
             "comprador_nombre": comprador,
             "beneficiario_nombre": beneficiario,
-            "servicio": servicio_gc
+            "servicio": servicio_gc,
+            "telefono_destino": clean_tel_gc
         }).execute()
         st.success(f"Gift Card {codigo} guardada en la base de datos.")
         
@@ -229,6 +237,24 @@ with tab4:
         </div>
         """
         st.markdown(voucher_html, unsafe_allow_html=True)
+        
+        # Botón para enviar por WhatsApp
+        msg_gc_wa = (
+            f"🎁 *¡Tienes una Gift Card de Sanay Masajes!*\n\n"
+            f"💆‍♀️ *Tratamiento:* {servicio_gc}\n"
+            f"👤 *Para:* {beneficiario}\n"
+            f"💝 *De:* {comprador}\n"
+            f"🏷️ *Código:* {codigo}\n\n"
+            f"📍 *Dirección:* Morelos 458\n"
+            f"📲 Contáctanos para agendar tu cita."
+        )
+        
+        if clean_tel_gc:
+            url_gc_wa = f"https://wa.me/{clean_tel_gc}?text={urllib.parse.quote(msg_gc_wa)}"
+            st.markdown(f"<br><a href='{url_gc_wa}' target='_blank' style='display: inline-block; padding: 12px 20px; background-color: #25D366; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;'>📲 Enviar Voucher de Gift Card por WhatsApp</a>", unsafe_allow_html=True)
+        else:
+            url_gc_wa_gen = f"https://wa.me/?text={urllib.parse.quote(msg_gc_wa)}"
+            st.markdown(f"<br><a href='{url_gc_wa_gen}' target='_blank' style='display: inline-block; padding: 12px 20px; background-color: #25D366; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;'>📲 Compartir Voucher por WhatsApp</a>", unsafe_allow_html=True)
         
         # Botón para enviar por WhatsApp
         msg_gc_wa = (
