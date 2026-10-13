@@ -27,7 +27,7 @@ with tab1:
     with st.form("form_paciente", clear_on_submit=True):
         col1, col2 = st.columns(2)
         nombre = col1.text_input("Nombre Completo *")
-        telefono = col2.text_input("Teléfono (con código de país, ej: 549...) *")
+        telefono = col2.text_input("Teléfono (ej: 5491123456789) *")
         email = col1.text_input("Email")
         recomendado = col2.text_input("Recomendado por")
         
@@ -37,9 +37,11 @@ with tab1:
         
         if st.form_submit_button("Guardar Paciente"):
             if nombre and telefono:
+                # Limpiar el número de teléfono por si agregan +, espacios o guiones
+                clean_phone = "".join(filter(str.isdigit, telefono))
                 supabase.table("pacientes").insert({
                     "nombre_completo": nombre,
-                    "telefono": telefono,
+                    "telefono": clean_phone,
                     "email": email,
                     "recomendado_por": recomendado,
                     "dolores_frecuentes": dolores,
@@ -78,19 +80,23 @@ with tab2:
     
     if pacientes:
         opciones = {p["nombre_completo"]: p for p in pacientes}
-        p_nombre = st.selectbox("Paciente atendido", list(opciones.keys()), key="visita_p")
+        p_nombre = st.selectbox("Paciente que asiste al turno", list(opciones.keys()), key="visita_p")
         p_data = opciones[p_nombre]
         
-        servicio = st.text_input("Servicio realizado", "Masaje Descontracturante 60 min")
+        col_v1, col_v2 = st.columns(2)
+        servicio = col_v1.text_input("Servicio realizado", "Masaje Descontracturante 60 min")
+        atendido_por = col_v2.text_input("Atendido por", "Sanay Masajes")
+        
         notas = st.text_area("Notas de la sesión / Evolución")
         
         if st.button("Registrar Visita"):
             supabase.table("visitas").insert({
                 "paciente_id": p_data["id"],
                 "servicio": servicio,
-                "notas_sesion": notas
+                "notas_sesion": notas,
+                "atendido_por": atendido_por
             }).execute()
-            st.success("Visita guardada en el historial.")
+            st.success("Visita guardada correctamente en el historial.")
             
         st.divider()
         st.header("Mensajes Rápidos de WhatsApp")
@@ -98,13 +104,15 @@ with tab2:
         # Mensaje Recordatorio
         msg_turno = f"Hola {p_data['nombre_completo']}! Te recordamos tu turno de masaje en Sanay Masajes (Morelos 458)."
         url_turno = f"https://wa.me/{p_data['telefono']}?text={urllib.parse.quote(msg_turno)}"
-        st.markdown(f"👉 [📲 Enviar Recordatorio de Turno]({url_turno})")
+        st.markdown(f"👉 [📲 Enviar Recordatorio de Turno por WhatsApp]({url_turno})")
         
         # Mensaje Reseña Google
-        link_google = "https://g.page/r/sanay-masajes/review"
-        msg_review = f"Hola {p_data['nombre_completo']}, ¿cómo te sentiste luego del masaje? Nos ayudaría mucho que nos dejes una opinión aquí: {link_google}"
+        link_google = "https://g.page/r/sanay-masajes/review" # Podrás cambiarlo por tu link directo de opiniones
+        msg_review = f"Hola {p_data['nombre_completo']}, ¿cómo te sentiste luego del masaje? En Sanay Masajes nos ayudaría mucho que nos dejes tu opinión aquí: {link_google}"
         url_review = f"https://wa.me/{p_data['telefono']}?text={urllib.parse.quote(msg_review)}"
-        st.markdown(f"👉 [⭐ Solicitar Reseña en Google Maps]({url_review})")
+        st.markdown(f"👉 [⭐ Solicitar Reseña de Google Maps por WhatsApp]({url_review})")
+    else:
+        st.info("Primero debes registrar al menos un paciente en la pestaña 'Pacientes y Fichas'.")
 
 # --- TAB 3: GIFT CARDS ---
 with tab3:
